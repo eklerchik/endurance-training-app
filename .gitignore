@@ -1,0 +1,42 @@
+# Android Studio / Gradle
+*.iml
+.gradle/
+.idea/
+local.properties
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Signing credentials — NEVER commit these
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+keystore.properties
+signing.properties
+
+# Local secrets / API configuration
+.env
+.env.*
+!.env.example
+secrets.properties
+**/secrets.properties
+**/google-services.json
+
+# Personal fitness / Garmin exports — keep local only
+private/
+private-data/
+exports/
+*.fit
+*.tcx
+*.gpx
+*garmin-export*
+*health-export*
+
+# OS noise
+.DS_Store
+Thumbs.db
