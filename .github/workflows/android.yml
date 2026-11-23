@@ -1,0 +1,66 @@
+name: Android APK
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  debug-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build debug APK
+        run: gradle :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trainwise-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Restore release keystore from GitHub Secrets
+        env:
+          TRAINWISE_KEYSTORE_BASE64: ${{ secrets.TRAINWISE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$TRAINWISE_KEYSTORE_BASE64" || (echo "Missing TRAINWISE_KEYSTORE_BASE64 secret" && exit 1)
+          printf '%s' "$TRAINWISE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/trainwise-release.jks"
+      - name: Build signed release APK
+        env:
+          TRAINWISE_KEYSTORE_PATH: ${{ runner.temp }}/trainwise-release.jks
+          TRAINWISE_KEYSTORE_PASSWORD: ${{ secrets.TRAINWISE_KEYSTORE_PASSWORD }}
+          TRAINWISE_KEY_ALIAS: ${{ secrets.TRAINWISE_KEY_ALIAS }}
+          TRAINWISE_KEY_PASSWORD: ${{ secrets.TRAINWISE_KEY_PASSWORD }}
+        run: |
+          test -n "$TRAINWISE_KEYSTORE_PASSWORD" || (echo "Missing signing password secret" && exit 1)
+          test -n "$TRAINWISE_KEY_ALIAS" || (echo "Missing signing alias secret" && exit 1)
+          test -n "$TRAINWISE_KEY_PASSWORD" || (echo "Missing signing key password secret" && exit 1)
+          gradle :app:assembleRelease
+      - name: Publish APK to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk "Trainwise-${GITHUB_REF_NAME}.apk"
+          gh release create "${GITHUB_REF_NAME}" "Trainwise-${GITHUB_REF_NAME}.apk" --generate-notes --title "Trainwise ${GITHUB_REF_NAME}"
