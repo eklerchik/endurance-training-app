@@ -1,51 +1,87 @@
 # Trainwise Android
 
-Нативная Android-версия Trainwise: Kotlin + Jetpack Compose. Это не WebView и не HTML-обёртка.
+Trainwise is a native Android endurance-training companion built with Kotlin and Jetpack Compose. It is designed around conservative, rule-based training planning, recovery-aware load adjustment, race planning, and workout analysis. It is not a WebView or an HTML wrapper.
 
-## Что уже есть
+## Current direction
 
-- Сегодня / readiness
-- Недельный план Пн–Вс
-- Регулятор недельного бегового объёма 40–100%
-- Минимальная длительность беговой тренировки
-- Воскресный длительный минимум 60 минут
-- Check-in
-- Силовая как защищённая часть недели
-- Календарь забегов
-- Анализ тренировок и recovery следующего дня
-- Локальное сохранение пользовательских настроек
+The Android app is replacing the earlier browser prototype while preserving the same product rules and user data model.
 
-## Приватность
+Planned and migrated capabilities include:
 
-Публичный репозиторий содержит только код и синтетические/демонстрационные данные. Реальные Garmin-метрики, тренировки, токены, OAuth secrets и signing keystore в Git не попадают.
+- Today / readiness overview
+- Monday-to-Sunday weekly training plan
+- Adjustable weekly running-volume percentage
+- Configurable minimum run duration
+- Long-run progression with a 60-minute minimum for a scheduled Sunday long run
+- Recovery check-in
+- Strength training as a protected part of the week rather than the first session to be removed
+- Race calendar
+- Workout analysis with next-day recovery response
+- Local persistence of user settings
+- Garmin Connect™ Personal API synchronization
 
-Правила и список запрещённых файлов: [SECURITY.md](SECURITY.md).
+## Garmin Connect Personal API
 
-## Garmin
+Trainwise can connect directly to the Garmin Connect Personal API for a single user's own Garmin data.
 
-Сейчас приложение использует локальные нормализованные данные. ChatGPT Garmin connector нельзя безопасно переиспользовать как авторизацию standalone-приложения. Для live-синхронизации нужен отдельный официальный API/backend adapter.
+Authentication flow:
 
-## GitHub Actions и APK
+1. The user creates a Personal API key in Garmin Connect Web.
+2. Trainwise exchanges the key for a short-lived bearer token using Garmin's official Personal API token endpoint.
+3. The Personal API key and bearer token are stored only on the Android device and encrypted using Android Keystore.
+4. Bearer tokens are reused until close to expiry instead of requesting a new token on every sync.
+5. Trainwise uses the bearer token to pull read-only Garmin data.
 
-Каждый push в `main` собирает debug APK как CI-артефакт.
+The current sync layer supports:
 
-Теги `v*` (например `v0.14.0`) предназначены для пользовательских релизов. Release APK подписывается постоянным ключом, который хранится только в GitHub Actions Secrets. Благодаря одной и той же подписи новая версия сможет устанавливаться поверх предыдущей.
+- Activities by date range
+- Daily summaries
+- Sleep summaries
+- HRV summaries
+- Body Battery
+- Daily stress
+- Individual activity details
+- Original activity ZIP/FIT downloads for the workout-analysis pipeline
 
-Нужные GitHub Secrets:
+Garmin data is pull-only. Trainwise does not write workouts or modify Garmin Connect data through the Personal API.
+
+## Privacy and security
+
+This public repository must contain source code and synthetic/demo data only.
+
+It must never contain:
+
+- Garmin Personal API keys
+- bearer tokens or OAuth credentials
+- Android signing keystores or passwords
+- personal Garmin activity/health exports
+- personal workout, recovery, or health history
+
+Garmin credentials are encrypted locally through Android Keystore. Synced Garmin payloads are stored inside the app's private Android storage and are never committed to GitHub.
+
+See [SECURITY.md](SECURITY.md) for repository rules.
+
+## GitHub Actions and APK releases
+
+Every push to `main` builds a debug APK as a CI artifact.
+
+Tags matching `v*` (for example `v0.15.0`) are intended for user-facing releases. Release APKs use one persistent Android signing key stored only in GitHub Actions Secrets. Keeping the same signing identity allows a newer Trainwise APK to update an existing installation.
+
+Required GitHub Actions Secrets:
 
 - `TRAINWISE_KEYSTORE_BASE64`
 - `TRAINWISE_KEYSTORE_PASSWORD`
 - `TRAINWISE_KEY_ALIAS`
 - `TRAINWISE_KEY_PASSWORD`
 
-До настройки этих secrets обычные debug-сборки работают, а tagged release намеренно завершится ошибкой вместо создания APK с неправильной подписью.
+Until these secrets are configured, normal debug builds can still run. Tagged release builds intentionally fail rather than publish an APK with the wrong signing identity.
 
-## Открыть локально
+## Open locally
 
-1. Android Studio → Open → папка проекта.
-2. Дождаться Gradle sync.
-3. Запустить на Android-устройстве/эмуляторе.
+1. Open the repository in Android Studio.
+2. Let Gradle sync finish.
+3. Run the app on an Android device or emulator.
 
-## Важно для данных пользователя
+## Data architecture
 
-Настройки и будущие импортированные тренировки должны храниться локально на устройстве или в защищённом backend. Они не должны становиться частью исходного кода или GitHub-истории.
+User settings and synced training data belong on the device or in a future protected backend. They are not part of the source tree or Git history.
