@@ -22,7 +22,7 @@ Planned and migrated capabilities include:
 
 ## Garmin Connect Personal API
 
-Trainwise can connect directly to the Garmin Connect Personal API for a single user's own Garmin data.
+Garmin Connect Personal API integration is planned but not yet implemented in this build.
 
 Authentication flow:
 
@@ -32,7 +32,7 @@ Authentication flow:
 4. Bearer tokens are reused until close to expiry instead of requesting a new token on every sync.
 5. Trainwise uses the bearer token to pull read-only Garmin data.
 
-The current sync layer supports:
+The planned sync layer will support:
 
 - Activities by date range
 - Daily summaries
@@ -57,7 +57,7 @@ It must never contain:
 - personal Garmin activity/health exports
 - personal workout, recovery, or health history
 
-Garmin credentials are encrypted locally through Android Keystore. Synced Garmin payloads are stored inside the app's private Android storage and are never committed to GitHub.
+Garmin credentials must be encrypted locally through Android Keystore when integration is implemented. Synced Garmin payloads must stay inside the app's private Android storage and must never be committed to GitHub.
 
 See [SECURITY.md](SECURITY.md) for repository rules.
 
